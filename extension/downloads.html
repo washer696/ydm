@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="downloadsTitle">YDM downloads</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="downloads.css">
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="title-row">
+        <img src="icon.svg" alt="" width="28" height="28">
+        <h1 data-i18n="downloads">Downloads</h1>
+        <span id="summary" class="summary num"></span>
+      </div>
+      <div class="toolbar">
+        <div class="segmented" role="tablist" aria-label="Filter" data-i18n-label="filter">
+          <button role="tab" data-filter="all" aria-selected="true"><span data-i18n="filterAll">All</span> <span class="num" data-count="all"></span></button>
+          <button role="tab" data-filter="downloading"><span data-i18n="filterActive">In progress</span> <span class="num" data-count="downloading"></span></button>
+          <button role="tab" data-filter="done"><span data-i18n="filterDone">Done</span> <span class="num" data-count="done"></span></button>
+          <button role="tab" data-filter="problem"><span data-i18n="filterProblem">Failed / cancelled</span> <span class="num" data-count="problem"></span></button>
+        </div>
+        <label class="search">
+          <span id="search-icon"></span>
+          <input id="search" type="search" placeholder="Search" data-i18n-placeholder="search" autocomplete="off">
+        </label>
+        <button id="clear" class="btn danger" data-i18n="clearHistory">Clear history</button>
+      </div>
+    </header>
+
+    <div id="host-error" class="banner" hidden></div>
+    <div id="list" class="list"></div>
+    <div id="empty" class="empty" hidden></div>
+
+    <section id="reglages" class="settings">
+      <h2 data-i18n="settings">Settings</h2>
+      <div class="setting-row">
+        <span id="folder-icon"></span>
+        <div class="setting-text">
+          <div class="setting-label" data-i18n="downloadFolder">Download folder</div>
+          <div id="download-dir" class="setting-value"></div>
+        </div>
+        <div class="setting-actions">
+          <button id="pick-folder" class="btn" data-i18n="choose">Choose…</button>
+          <button id="reset-folder" class="btn" data-i18n="defaultFolder" hidden>Default</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span id="engine-icon"></span>
+        <div class="setting-text">
+          <div class="setting-label" data-i18n="engine">yt-dlp engine</div>
+          <div id="engine-info" class="setting-value"></div>
+        </div>
+        <div class="setting-actions">
+          <button id="update-engine" class="btn" data-i18n="update">Update</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span id="language-icon"></span>
+        <div class="setting-text">
+          <label class="setting-label" for="language" data-i18n="language">Language</label>
+        </div>
+        <div class="setting-actions">
+          <select id="language">
+            <option value="auto" data-i18n="langAuto">Automatic (Firefox)</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <p class="footnote" data-i18n="footnote">Clearing the history never deletes a finished video. Partial files of cancelled or failed downloads are deleted.</p>
+    <p class="footnote"><span data-i18n="credit">YDM runs on yt-dlp, made by volunteers.</span> <a href="https://github.com/yt-dlp/yt-dlp/blob/master/Maintainers.md" target="_blank" rel="noopener" data-i18n="supportThem">Support them</a></p>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="ui.js"></script>
+  <script src="downloads.js"></script>
+</body>
+</html>

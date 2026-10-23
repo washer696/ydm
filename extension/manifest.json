@@ -1,0 +1,51 @@
+{
+  "manifest_version": 2,
+  "name": "YDM",
+  "version": "3.3.0",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ydm@washer696",
+      "update_url": "https://raw.githubusercontent.com/washer696/ydm/main/updates.json",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "permissions": [
+    "nativeMessaging",
+    "webRequest",
+    "menus",
+    "clipboardWrite",
+    "storage",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": [
+      "i18n.js",
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_title": "YDM",
+    "default_popup": "popup.html",
+    "default_icon": "icon.svg"
+  },
+  "commands": {
+    "download-tab": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "__MSG_cmdDownloadTab__"
+    }
+  },
+  "icons": {
+    "48": "icon.svg",
+    "96": "icon.svg"
+  }
+}

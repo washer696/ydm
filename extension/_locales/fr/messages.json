@@ -1,0 +1,4 @@
+{
+  "extDescription": {"message": "Détecte les vidéos des pages et les télécharge avec yt-dlp."},
+  "cmdDownloadTab": {"message": "Télécharger la vidéo de l'onglet (meilleure qualité)"}
+}

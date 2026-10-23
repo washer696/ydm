@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>YDM</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="" width="20" height="20">
+      <span>YDM</span>
+    </div>
+    <div class="header-actions">
+      <button id="open-downloads" class="btn"><span data-i18n="history">History</span></button>
+      <span id="open-settings"></span>
+    </div>
+  </header>
+
+  <main>
+    <div id="host-error" class="banner" hidden></div>
+
+    <section id="page-card" class="card" hidden>
+      <div class="video-head">
+        <div id="page-thumb" class="thumb"></div>
+        <div class="video-info">
+          <div id="page-title" class="video-title"></div>
+          <div id="page-sub" class="video-sub"></div>
+        </div>
+      </div>
+      <div id="qualities" class="qualities"></div>
+    </section>
+
+    <section id="streams-card" class="card" hidden>
+      <h2><span data-i18n="streamsDetected">Detected streams</span> <span id="streams-count" class="count"></span></h2>
+      <div id="streams"></div>
+    </section>
+
+    <section id="nothing" class="empty" hidden>
+      <div id="nothing-icon"></div>
+      <p><span data-i18n="nothingLine1">No video detected on this page.</span><br><span data-i18n="nothingLine2">Start playing it, or analyze the page.</span></p>
+      <button id="analyze" class="btn" data-i18n="analyzePage">Analyze the page</button>
+    </section>
+
+    <section id="downloads-section" hidden>
+      <h2 data-i18n="downloads">Downloads</h2>
+      <div id="downloads"></div>
+    </section>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="ui.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

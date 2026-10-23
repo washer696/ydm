@@ -1,0 +1,48 @@
+# Installs YDM with the one-line installers and runs the offline tests on Linux, macOS and Windows.
+name: Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      YDM_NO_DEPS: "1"        # the runners' own Python is used; system packages aren't needed for the tests
+      YDM_NO_EXTENSION: "1"   # no Firefox on the runners
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install with install.sh
+        id: install_sh
+        if: runner.os != 'Windows'
+        run: sh install.sh
+      - name: Install with install.ps1 (Windows PowerShell)
+        id: install_ps1
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
+      - name: Installation as Firefox sees it
+        if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
+        run: python tools/test_install.py
+      - name: Real yt-dlp update
+        if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
+        run: python tools/test_real_update.py
+      - name: Engine update through the bridge
+        if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
+        run: python tools/test_update.py
+      - name: Download queue
+        if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
+        run: python tools/test_queue.py
+      - name: Privacy
+        if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
+        run: python tools/test_privacy.py

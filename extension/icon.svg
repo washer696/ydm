@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" shape-rendering="crispEdges">
+  <!-- Pixel arrow on a 16-cell grid (3 units per cell): one cell per pixel at 16 px, so it stays sharp in the toolbar. -->
+  <rect width="48" height="48" rx="9" fill="#0A0A0A"/>
+  <g fill="#39FF14">
+    <rect x="21" y="9" width="6" height="15"/>
+    <rect x="12" y="24" width="24" height="3"/>
+    <rect x="15" y="27" width="18" height="3"/>
+    <rect x="18" y="30" width="12" height="3"/>
+    <rect x="21" y="33" width="6" height="3"/>
+    <rect x="9" y="39" width="30" height="3"/>
+  </g>
+</svg>

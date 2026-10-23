@@ -1,0 +1,113 @@
+body { width: 400px; }
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 14px;
+  box-shadow: 0 1px 0 var(--track);
+}
+.header-actions { display: flex; align-items: center; gap: 4px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+
+main { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-height: 540px; overflow-y: auto; }
+
+h2 {
+  margin: 0 0 6px;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.count { font-weight: 400; color: var(--faint); }
+
+/* Card: radius 14 = inner radius 10 + 4 padding (concentric radii) */
+.card {
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.video-head { display: flex; gap: 12px; align-items: center; }
+.video-head .thumb { width: 112px; height: 63px; }
+.video-info { min-width: 0; flex: 1; }
+.video-title {
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+.video-sub { margin-top: 2px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* Quality list */
+.qualities { display: grid; gap: 2px; margin: 10px -4px -4px; }
+.quality {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 10px;
+  text-align: left;
+  transition-property: background-color, scale;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease);
+}
+.quality:hover { background: var(--surface-2); }
+.quality:active { scale: 0.98; }
+.quality .q-label { font-weight: 600; min-width: 64px; font-variant-numeric: tabular-nums; }
+.quality .q-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.quality .q-size { flex: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.quality .q-go {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--accent);
+  transition-property: background-color, color;
+  transition-duration: 150ms;
+}
+.quality:hover .q-go { background: var(--accent); color: var(--accent-fg); }
+.quality .q-go svg { width: 16px; height: 16px; }
+.quality.best { background: var(--accent-soft); }
+.quality.best:hover { background: color-mix(in srgb, var(--accent-soft), var(--accent) 10%); }
+.quality.sent .q-go { background: var(--ok); color: var(--bg); }
+.more { color: var(--muted); font-size: 12px; justify-content: center; }
+.more:hover { color: var(--fg); }
+.q-error { color: var(--warn); padding: 4px 6px 8px; font-size: 12px; }
+
+.skeleton-row { height: 36px; margin: 2px 0; }
+.skeleton-text { height: 12px; margin: 4px 0; }
+
+/* Detected streams */
+.stream { padding: 6px 0; }
+.stream + .stream { box-shadow: 0 -1px 0 var(--track); }
+.stream-head { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.stream-kind {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.stream-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stream-size { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.stream .qualities { margin-top: 4px; }
+
+#downloads { margin: 0 -10px; }
+.see-all { width: 100%; margin-top: 4px; color: var(--accent); }
+.empty p { margin: 0 0 12px; }

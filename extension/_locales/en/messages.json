@@ -1,0 +1,4 @@
+{
+  "extDescription": {"message": "Detects the videos on web pages and downloads them with yt-dlp."},
+  "cmdDownloadTab": {"message": "Download the tab's video (best quality)"}
+}

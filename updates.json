@@ -1,0 +1,13 @@
+{
+  "addons": {
+    "ydm@washer696": {
+      "updates": [
+        {
+          "version": "3.3.0",
+          "update_link": "https://github.com/washer696/ydm/releases/download/v3.3.0/ydm-3.3.0.xpi",
+          "update_hash": "sha256:a9a300877fbab3669219fbe1e8e81d4e8050b100b50198d5262f57cd63d80dd2"
+        }
+      ]
+    }
+  }
+}
