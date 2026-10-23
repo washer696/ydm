@@ -23,7 +23,7 @@ jobs:
       YDM_NO_DEPS: "1"        # the runners' own Python is used; system packages aren't needed for the tests
       YDM_NO_EXTENSION: "1"   # no Firefox on the runners
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
