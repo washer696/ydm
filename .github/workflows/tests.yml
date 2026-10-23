@@ -1,13 +1,18 @@
 # Installs YDM with the one-line installers and runs the offline tests on Linux, macOS and Windows.
+# Also every Monday on the public repository: yt-dlp changes every day, and the accelerator relies on
+# its internals, so a new yt-dlp that breaks YDM shows up here before users notice.
 name: Tests
 
 on:
   push:
   workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
 
 jobs:
   tests:
     name: ${{ matrix.os }}
+    if: github.event_name != 'schedule' || github.repository == 'washer696/ydm'
     strategy:
       fail-fast: false
       matrix:

@@ -1,0 +1,7 @@
+# Proposes updates for the GitHub Actions the tests use (checkout, setup-python), once a month.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

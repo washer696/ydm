@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Publishes the signed version to the public repository: one clean commit, the update manifest and the downloadable release.
 
-Usage: tools/publish.py [--fresh]   (after tools/sign.sh, in a repository with no uncommitted changes)
+Usage: tools/publish.py [--fresh] [--message TEXT]   (after tools/sign.sh, with no uncommitted changes)
+
+--message replaces the public commit's message ("YDM <version>" by default), for changes that don't
+touch the extension, such as the tests.
 
 --fresh starts the public history over with this version: older commits, releases and tags are
 deleted, and links to older versions stop working. Only for cleaning up what was published by mistake.
@@ -20,6 +23,7 @@ GH = shutil.which("gh") or os.path.expanduser("~/.local/bin/gh")
 GH_ENV = {**os.environ, "GH_CONFIG_DIR": os.path.expanduser("~/.config/gh-ydm")}
 WORK = os.path.expanduser("~/.local/share/ydm-publish")
 GIT_UTC = {**os.environ, "TZ": "UTC"}
+DESCRIPTION = "Download the videos you're watching, straight from Firefox. A small front end for yt-dlp."
 
 
 def run(cmd, cwd=None, env=None, capture=True):
@@ -41,6 +45,8 @@ def main():
     owner, name = match[1], match[2]
     repo = f"{owner}/{name}"
     fresh = "--fresh" in sys.argv[1:]
+    args = sys.argv[1:]
+    message = args[args.index("--message") + 1] if "--message" in args[:-1] else f"YDM {version}"
 
     if run(["git", "status", "--porcelain"], cwd=ROOT):
         sys.exit("The repository has uncommitted changes: commit them first.")
@@ -71,8 +77,9 @@ def main():
         run(["git", "init", "-q", "-b", "main", public])
         run(["git", "remote", "add", "origin", f"https://github.com/{repo}.git"], cwd=public)
     if not exists:
-        gh("repo", "create", repo, "--public", "--description",
-           "Firefox extension that detects videos on web pages and downloads them with yt-dlp (Linux, macOS, Windows)")
+        gh("repo", "create", repo, "--public", "--description", DESCRIPTION)
+    else:
+        gh("repo", "edit", repo, "--description", DESCRIPTION)  # kept in sync with this file
     if not os.path.isdir(os.path.join(public, ".git")):
         shutil.rmtree(public, ignore_errors=True)
         os.makedirs(WORK, exist_ok=True)
@@ -112,7 +119,7 @@ def main():
     run(["git", "add", "-A"], cwd=public)
     if run(["git", "status", "--porcelain"], cwd=public):
         run(["git", *identity, "commit", "-q", "-m",
-             f"YDM {version}\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"], cwd=public, env=GIT_UTC)
+             f"{message}\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"], cwd=public, env=GIT_UTC)
     run(["git", *identity, "push", "-q", "-u", *(["--force"] if fresh else []), "origin", "main"], cwd=public)
 
     if subprocess.run([GH, "release", "view", f"v{version}", "--repo", repo], env=GH_ENV, capture_output=True).returncode == 0:
