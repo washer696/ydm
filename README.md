@@ -29,6 +29,7 @@ Run it again to update the companion app. The extension updates itself.
 ## Using it
 
 - The toolbar button shows how many videos YDM found on the page. Open it to pick a quality, or audio only.
+- "Transcript" saves the video's subtitles without the video, in a few seconds: a plain-text `.txt` to read, and the `.srt` with timings. On YouTube, it also works with the automatic captions, cleaned of their repeated lines.
 - Right-click a link, a video or a page, then "Download with YDM".
 - Alt+Shift+D downloads the current tab's video in the best quality.
 - The Downloads page holds the history and the queue. Three downloads run at once, the others wait their turn. Settings are at the bottom: folder, language, yt-dlp version.

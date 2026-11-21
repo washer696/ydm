@@ -48,6 +48,9 @@ jobs:
       - name: Download queue
         if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
         run: python tools/test_queue.py
+      - name: Transcripts
+        if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
+        run: python tools/test_subs.py
       - name: Privacy
         if: ${{ !cancelled() && (steps.install_sh.outcome == 'success' || steps.install_ps1.outcome == 'success') }}
         run: python tools/test_privacy.py

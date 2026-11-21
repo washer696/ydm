@@ -94,7 +94,55 @@ function renderQualities(container, source, data) {
       })
     );
   }
+  children.push(...transcriptRows(source, data));
   container.replaceChildren(...children);
+}
+
+// --- Transcript (subtitles only, without the video) ---
+
+function languageName(code) {
+  const base = code.replace(/-orig$/, "");
+  try {
+    const name = new Intl.DisplayNames([LANG], { type: "language" }).of(base);
+    if (name && name !== base) return name.charAt(0).toLocaleUpperCase(LANG) + name.slice(1);
+  } catch {}
+  return base;
+}
+
+const primaryLang = (code) => code.split(/[-_]/)[0].toLowerCase();
+
+/** Tracks worth offering, best first: the author's in the interface language, the author's in the video's
+ * language, the speech recognition, then the rest. */
+function transcriptOptions(data) {
+  const videoLang = data.language ? primaryLang(data.language) : null;
+  const rank = (s) => {
+    if (!s.auto) return primaryLang(s.lang) === LANG ? 0 : primaryLang(s.lang) === videoLang ? 1 : 3;
+    return primaryLang(s.lang) === videoLang || s.lang.endsWith("-orig") ? 2 : 4;
+  };
+  return (data.subtitles || []).slice().sort((a, b) => rank(a) - rank(b));
+}
+
+function transcriptRows(source, data) {
+  const rows = transcriptOptions(data).map((s) => {
+    const name = languageName(s.lang);
+    return qualityButton({
+      label: t("transcript"),
+      tag: s.auto ? `${name} · ${t("transcriptAuto")}` : name,
+      iconName: "text",
+      onClick: () =>
+        download(source, data, { mode: "subs", lang: s.lang, auto: s.auto, label: `${t("transcript")} · ${name}` }),
+    });
+  });
+  const hidden = rows.slice(1);
+  if (!hidden.length) return rows;
+  hidden.forEach((r) => (r.hidden = true));
+  const more = el("button", { class: "quality more" }, el("span", { text: tn("moreLanguages", hidden.length) }), icon("chevron"));
+  more.querySelector("svg").style.cssText = "width:14px;height:14px";
+  more.addEventListener("click", () => {
+    hidden.forEach((r) => (r.hidden = false));
+    more.remove();
+  });
+  return [...rows, more];
 }
 
 async function loadQualities(container, source, onData) {

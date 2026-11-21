@@ -316,8 +316,13 @@ browser.runtime.onMessage.addListener((msg, sender) => {
       if (!isHttp(msg.url)) return;
       return getFormats(msg.url, msg.referer).catch(failure);
     case "download": {
-      if (!isHttp(msg.url) || !["video", "audio"].includes(msg.mode)) return;
+      if (!isHttp(msg.url) || !["video", "audio", "subs"].includes(msg.mode)) return;
       const payload = { url: msg.url, mode: msg.mode };
+      if (msg.mode === "subs") {
+        if (typeof msg.lang !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/.test(msg.lang)) return;
+        payload.lang = msg.lang;
+        payload.auto = msg.auto === true;
+      }
       if (isHttp(msg.referer) && msg.referer !== msg.url) payload.referer = msg.referer;
       if (Number.isInteger(msg.height)) payload.height = msg.height;
       if (typeof msg.title === "string") payload.title = msg.title.slice(0, 300);

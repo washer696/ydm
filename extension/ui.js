@@ -12,6 +12,7 @@ const ICONS = {
   trash: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
   film: "M4 4h16v16H4zM8 4v16M16 4v16M4 9h4M4 15h4M16 9h4M16 15h4",
   music: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
+  text: "M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5",
   external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
   copy: "M9 9h11v11H9zM5 15H4V4h11v1",
   alert: "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
@@ -184,7 +185,7 @@ function updateEntryRow(row, e) {
     row._thumbKey = thumbKey;
     row._thumb.replaceChildren(
       thumbKey.startsWith("icon:")
-        ? icon(e.mode === "audio" ? "music" : "film")
+        ? icon(e.mode === "audio" ? "music" : e.mode === "subs" ? "text" : "film")
         : el("img", { src: thumbKey, alt: "", referrerpolicy: "no-referrer", loading: "lazy" })
     );
   }

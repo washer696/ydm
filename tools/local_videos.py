@@ -1,6 +1,7 @@
 """Local server of "videos" for offline tests.
 
 - /slow/...: 16 MB of random bytes served slowly (~80 KB/s per connection), to keep downloads in progress;
+- /subs/page.html: a web page playing that video with French subtitles (/subs/fr.vtt), for transcripts;
 - any other path: a real small mp4 video (fixtures/tiny.mp4, 1 s), for downloads that run to completion.
 Byte ranges (Range header) are supported, as on a real site.
 """
@@ -8,6 +9,17 @@ import http.server, os, re, sys, threading, time
 
 SLOW = os.urandom(16 * 1024 * 1024)
 TINY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "tiny.mp4")
+SUBS_PAGE = b"""<!doctype html><html><head><title>Subtitled video</title></head><body>
+<video controls src="/subs/video.mp4"><track kind="subtitles" srclang="fr" label="Fran\xc3\xa7ais" src="/subs/fr.vtt"></video>
+</body></html>"""
+SUBS_VTT = """WEBVTT
+
+00:00:00.000 --> 00:00:01.500
+Bonjour à tous.
+
+00:00:01.500 --> 00:00:03.000
+<i>Voici</i> une vidéo de test.
+""".encode()
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -20,6 +32,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.reply(body=True)
 
     def reply(self, body):
+        if self.path in ("/subs/page.html", "/subs/fr.vtt"):
+            page = self.path.endswith(".html")
+            data = SUBS_PAGE if page else SUBS_VTT
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8" if page else "text/vtt; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            if body:
+                self.wfile.write(data)
+            return
         slow = self.path.startswith("/slow/")
         payload = SLOW if slow else self.server.video
         match = re.fullmatch(r"bytes=(\d+)-(\d*)", self.headers.get("Range") or "")

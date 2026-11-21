@@ -5,7 +5,8 @@ Security:
 - only a few message types are accepted; everything else is refused;
 - URLs are validated (http/https only) and passed to yt-dlp after "--",
   without a shell: they can never become an option or a command;
-- the quality is a checked integer, the mode is "video" or "audio": no free-form option;
+- the quality is a checked integer, the mode is "video", "audio" or "subs", a subtitle language
+  is a short code of letters, digits and "-": no free-form option;
 - "open" only accepts a history ID, never a path sent by the extension;
 - the download folder is chosen on the bridge side (zenity), never received from the extension.
 
@@ -50,7 +51,7 @@ SETTINGS_FILE = os.path.join(STATE_DIR, "settings.json")
 UPDATE_FILE = os.path.join(STATE_DIR, "update.json")
 LOCK_FILE = os.path.join(STATE_DIR, "history.lock")
 # Bridge protocol version, announced to the extension: it asks the user to rerun install.py if the bridge is too old.
-BRIDGE_VERSION = 2
+BRIDGE_VERSION = 3
 MAX_URL_LEN = 4096
 MAX_HISTORY = 500
 UPDATE_INTERVAL = 24 * 3600
@@ -219,6 +220,17 @@ def clean_height(value):
     if isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 10000:
         return value
     raise ValueError("quality refused")
+
+
+LANG_CODE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,31}")
+
+
+def clean_lang(value):
+    """A subtitle language code (en, pt-BR, es-419, fr-orig...). yt-dlp reads --sub-langs as regular
+    expressions: only letters, digits, "-" and "_" get through, and "all" is refused."""
+    if isinstance(value, str) and LANG_CODE.fullmatch(value) and value.lower() != "all":
+        return value
+    return None
 
 
 def clean_text(value, limit=300):
@@ -457,7 +469,23 @@ def formats(url, referer):
         "extractor": info.get("extractor_key"),
         "qualities": qualities,
         "audio": {"size": best_audio} if audio else None,
+        "language": info.get("language") if isinstance(info.get("language"), str) else None,
+        "subtitles": subtitle_tracks(info),
     }
+
+
+def subtitle_tracks(info):
+    """Subtitle tracks yt-dlp can fetch without the video: [{"lang", "auto"}], the author's first.
+
+    On YouTube, automatic captions come as "<lang>-orig" (the speech recognition) plus about 150
+    machine translations of it. The translations are left out: YouTube answers them with
+    "429 Too Many Requests" unless yt-dlp has curl_cffi, which its standalone build lacks.
+    """
+    manual = [k for k in info.get("subtitles") or {} if clean_lang(k) and k != "live_chat"]
+    auto = [k for k in info.get("automatic_captions") or {} if clean_lang(k)]
+    orig = [k for k in auto if k.endswith("-orig")]
+    # Other sites: no "-orig", and a few automatic tracks at most, all of them shown.
+    return [{"lang": k, "auto": False} for k in manual] + [{"lang": k, "auto": True} for k in (orig or auto[:5])]
 
 
 # --- Engine update ---
@@ -580,6 +608,8 @@ def job_paths(entry_id):
 
 
 def build_command(entry):
+    if entry["mode"] == "subs":
+        return subs_command(entry)
     # Without an accelerator validated for this yt-dlp version: sequential 2 MB chunks, the measured fallback.
     base = [sys.executable, FAST] if fast_enabled() else [sys.executable, YTDLP, "--http-chunk-size", "2M"]
     cmd = base + ["--no-playlist", "-N", FRAGMENTS,
@@ -605,6 +635,111 @@ def build_command(entry):
     if entry.get("referer"):
         cmd += ["--referer", entry["referer"]]
     return cmd + ["--", entry["url"]]
+
+
+def subs_command(entry):
+    """Only the subtitles, no video: a few seconds, whatever the video's length."""
+    name = entry.get("name")
+    stem = name.replace("%", "%%") if name else "%(title).150B [%(id)s]"
+    cmd = [sys.executable, YTDLP, "--no-playlist", "--skip-download",
+           "--write-auto-subs" if entry.get("auto") else "--write-subs",
+           "--sub-langs", entry["lang"], "--sub-format", "vtt/srt/best", "--convert-subs", "srt",
+           # A yt-dlp config with --embed-thumbnail would leave the image behind: there's no video to put it in.
+           "--no-embed-thumbnail", "--no-write-thumbnail",
+           "-P", entry.get("dir") or download_dir(), "-o", stem + ".%(ext)s",
+           "--print", "video:TITLE %(title)s", "--print", "video:THUMB %(thumbnail)s",
+           "--print", "before_dl:STEM %(filename)s"]
+    if entry.get("referer"):
+        cmd += ["--referer", entry["referer"]]
+    return cmd + ["--", entry["url"]]
+
+
+def subtitle_file(entry):
+    """The .srt that yt-dlp wrote for a "subs" entry, or None. yt-dlp prints no path for it:
+    it is "<stem>.<lang>.srt", or the original format if the conversion failed."""
+    folder, stem, lang = entry.get("dir"), entry.get("stem"), entry.get("lang")
+    if not folder or not stem or not lang:
+        return None
+    for ext in ("srt", "vtt", "ttml", "srv3", "json3"):
+        path = os.path.join(folder, f"{stem}.{lang}.{ext}")
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+SRT_TIME = re.compile(r"(\d+:\d\d:\d\d[,.]\d+)\s*-->\s*(\d+:\d\d:\d\d[,.]\d+)")
+SRT_TAG = re.compile(r"<[^>]*>")
+
+
+def read_cues(path):
+    """[(start, end, [lines])] of an .srt file."""
+    # Read line by line, not by blocks: YouTube's cues can hold an empty line.
+    cues = []
+    with open(path, encoding="utf-8-sig", errors="replace") as f:
+        for raw in f:
+            line = SRT_TAG.sub("", raw).strip()
+            m = SRT_TIME.search(line)
+            if m:
+                if cues and cues[-1][2] and cues[-1][2][-1].isdigit():
+                    cues[-1][2].pop()  # the number of this cue, at the end of the previous one
+                cues.append((m[1], m[2], []))
+            elif line and cues:
+                cues[-1][2].append(line)
+    return cues
+
+
+def roll_up(cues):
+    """Automatic captions scroll: each line shows up in 2 or 3 cues in a row. Keeps each line once,
+    in the cue where it first appears."""
+    out, previous = [], []
+    for start, end, lines in cues:
+        new = [l for l in lines if l not in previous]
+        if lines:
+            previous = lines
+        if new:
+            out.append((start, end, new))
+    return out
+
+
+def paragraphs(lines, target=600):
+    """Plain text: the lines joined into paragraphs of about `target` characters, cut at a sentence end."""
+    paras, current = [], ""
+    for line in lines:
+        current = f"{current} {line}".strip()
+        # Automatic captions often have no punctuation: cut anyway past twice the target.
+        if len(current) >= target and current[-1] in ".?!…" or len(current) >= 2 * target:
+            paras.append(current)
+            current = ""
+    if current:
+        paras.append(current)
+    return "\n\n".join(paras) + "\n"
+
+
+def write_transcript(entry, srt_path):
+    """Cleans the .srt (automatic captions) and writes the plain-text transcript next to it.
+    Returns the path of the .txt, or None if the subtitles are empty or unreadable."""
+    if not srt_path.endswith(".srt"):
+        return None
+    try:
+        cues = read_cues(srt_path)
+        if entry.get("auto"):
+            cues = roll_up(cues)
+            with open(srt_path, "w", encoding="utf-8") as f:
+                for n, (start, end, lines) in enumerate(cues, 1):
+                    f.write(f"{n}\n{start} --> {end}\n" + "\n".join(lines) + "\n\n")
+        lines = [l for _, _, ls in cues for l in ls]
+        if not lines:
+            return None
+        txt_path = srt_path[:-len(".srt")] + ".txt"
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(paragraphs(lines))
+        if not WINDOWS:
+            # Written by the bridge, whose umask keeps its state private: the usual permissions, like the videos.
+            os.chmod(txt_path, 0o666 & ~USER_UMASK)
+        return txt_path
+    except OSError as e:
+        log(f"TRANSCRIPT error {type(e).__name__}")
+        return None
 
 
 def spawn(entry):
@@ -758,6 +893,12 @@ def finalize(entry_id):
             err = ""
         apply_info(entry, info)
         entry["finished"] = time.time()
+        if entry["mode"] == "subs" and not entry.get("cancel_requested"):
+            srt = subtitle_file(entry)
+            entry["file"] = srt and (write_transcript(entry, srt) or srt)
+            if not srt and "ERROR" not in err:
+                # yt-dlp only warns, and succeeds, when the language isn't there.
+                err += "\nERROR: no subtitles in this language"
         file_path = entry.get("file")
         if entry.get("cancel_requested"):
             entry["status"] = "cancelled"
@@ -837,10 +978,13 @@ def new_entry_id():
     return time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:12]
 
 
-def start_download(msg_id, url, referer, mode, height, title, label, name, private):
+def start_download(msg_id, url, referer, mode, height, title, label, name, private, subs=None):
+    """`subs`: {"lang", "auto"} for the "subs" mode (subtitles only)."""
+    lang = subs and subs["lang"]
     with History() as h:
         for e in h.entries:
-            if e["status"] in PENDING and e["url"] == url and e["mode"] == mode and e.get("height") == height:
+            if (e["status"] in PENDING and e["url"] == url and e["mode"] == mode and e.get("height") == height
+                    and e.get("lang") == lang):
                 code, text = (("already_downloading", "already downloading") if e["status"] == ACTIVE
                               else ("already_queued", "already queued"))
                 send({"type": "error", "id": msg_id, "code": code, "error": text})
@@ -852,6 +996,8 @@ def start_download(msg_id, url, referer, mode, height, title, label, name, priva
         }
         if private:
             entry["private"] = True
+        if subs:
+            entry.update(subs)
         h.entries.insert(0, entry)
         started = enqueue(h, entry)
         snapshot = dict(entry)
@@ -1139,14 +1285,21 @@ def handle(msg):
             threading.Thread(target=work, daemon=True).start()
         else:
             mode = msg.get("mode", "video")
-            if mode not in ("video", "audio"):
+            if mode not in ("video", "audio", "subs"):
                 send({"type": "error", "id": msg_id, "code": "bad_mode", "error": "mode refused"})
                 return
             height = clean_height(msg.get("height")) if mode == "video" else None
+            subs = None
+            if mode == "subs":
+                lang = clean_lang(msg.get("lang"))
+                if lang is None:
+                    send({"type": "error", "id": msg_id, "code": "bad_lang", "error": "language refused"})
+                    return
+                subs = {"lang": lang, "auto": msg.get("auto") is True}
             title = clean_text(msg.get("title"))
             name = safe_name(title) if msg.get("pageTitle") is True else None
             start_download(msg_id, url, referer, mode, height, title, clean_text(msg.get("label"), 40), name,
-                           msg.get("private") is True)
+                           msg.get("private") is True, subs)
     else:
         send({"type": "error", "id": msg_id, "code": "unknown_message", "error": "unknown message type"})
 
